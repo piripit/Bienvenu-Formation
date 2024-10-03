@@ -43,8 +43,8 @@
             position: absolute;
             top: 0;
             width: 100%;
-            /* Dégradé violet doux */
-            background: linear-gradient(135deg, #8a4f9a, #aa66cc);
+            /* Dégradé bleu doux */
+            background-color: #0056b3;
         }
 
         .navbar-brand img {
