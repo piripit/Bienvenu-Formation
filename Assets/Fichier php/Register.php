@@ -119,6 +119,21 @@
             </div>
         </div>
     </div>
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4 mt-auto w-100">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-1">&copy; 2024 ESPL(MyDigitalSchool). Tous droits réservés.</p>
+                    <p class="mb-1"><a href="#" class="text-white text-decoration-none">@Mentions légales</a></p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="mb-1">Contact : <a href="mailto:contact@entreprise.com" class="text-white text-decoration-none">contact@entreprise.com</a></p>
+                    <p class="mb-1">Adresse : Pole Mandel, Angers, France</p>
+                </div>
+            </div>
+        </div>
+    </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Optionally load Bootstrap Icons -->
