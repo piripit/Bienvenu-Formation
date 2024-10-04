@@ -108,16 +108,16 @@
                             <thead class="table-primary">
                                 <tr>
                                     <th>Nom de l'étudiant</th>
-                                    <th>Présent</th>
+                                    <th>Présence</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php
-                                // Affichage des étudiants dans la modal
+                                // Affichage des étudiants avec une case à cocher pour l'appel
                                 foreach ($students as $student) {
                                     echo "<tr>";
                                     echo "<td>{$student['name']}</td>";
-                                    echo "<td><input type='checkbox' name='attendance[]' value='{$student['id']}'></td>"; // Checkbox pour chaque étudiant
+                                    echo "<td><input type='checkbox' name='present[]' value='{$student['id']}'></td>";
                                     echo "</tr>";
                                 }
                                 ?>
@@ -127,7 +127,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                    <button type="button" class="btn btn-primary" id="submitAttendance">Enregistrer l'appel</button>
+                    <button type="button" class="btn btn-primary" id="saveAttendance">Enregistrer</button>
                 </div>
             </div>
         </div>
@@ -135,39 +135,47 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        document.getElementById('submitAttendance').addEventListener('click', function() {
-            // Récupérer les IDs des étudiants présents
-            const form = document.getElementById('attendanceForm');
-            const formData = new FormData(form);
-            const presentStudents = formData.getAll('attendance');
+        // Récupérer les éléments du tableau principal
+        const studentsTable = document.getElementById('studentsTable');
+        const rows = studentsTable.querySelectorAll('tbody tr');
 
-            // Affichage des IDs des étudiants présents pour vérification
-            console.log('Étudiants présents : ', presentStudents);
-
-            // Mettre à jour les statuts dans le tableau principal
-            const studentsTable = document.getElementById('studentsTable');
-            const rows = studentsTable.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
-
-            // Réinitialiser tous les statuts à 'Absent' avant de mettre à jour
-            for (let i = 0; i < rows.length; i++) {
-                rows[i].getElementsByClassName('status')[0].innerText = 'Absent';
+        // Réinitialiser tous les statuts à 'Absent' avant de mettre à jour
+        rows.forEach(row => {
+            const statusCell = row.querySelector('.status');
+            if (statusCell) {
+                statusCell.innerText = 'Absent';
             }
+        });
 
-            // Mettre à jour les étudiants présents
-            presentStudents.forEach(studentId => {
-                const studentRow = document.getElementById(`student-${studentId}`);
-                const statusCell = studentRow.querySelector('.status');
-                if (statusCell) {
-                    statusCell.innerText = 'Présent'; // Mettre à jour le statut à "Présent"
+        // Mettre à jour les étudiants présents
+        const presentStudents = [];
+        document.getElementById('saveAttendance').addEventListener('click', () => {
+            const checkboxes = document.querySelectorAll('input[name="present[]"]');
+            presentStudents.length = 0; // Réinitialiser le tableau des étudiants présents
+
+            checkboxes.forEach(checkbox => {
+                if (checkbox.checked) {
+                    presentStudents.push(checkbox.value);
                 }
             });
 
-            // Afficher un message avec les étudiants présents
-            alert('Étudiants présents : ' + presentStudents.join(', '));
+            // Mettre à jour les statuts dans le tableau principal
+            rows.forEach(row => {
+                const studentId = row.id.split('-')[1];
+                const statusCell = row.querySelector('.status');
+                if (statusCell) {
+                    if (presentStudents.includes(studentId)) {
+                        statusCell.innerText = 'Présent';
+                    } else {
+                        statusCell.innerText = 'Absent';
+                    }
+                }
+            });
 
-            // Fermer la modal
-            const attendanceModal = bootstrap.Modal.getInstance(document.getElementById('attendanceModal'));
-            attendanceModal.hide();
+            // Fermer la fenêtre modale
+            const modal = document.getElementById('attendanceModal');
+            const modalInstance = bootstrap.Modal.getInstance(modal);
+            modalInstance.hide();
         });
     </script>
 </body>
