@@ -21,11 +21,17 @@
             background-color: rgba(255, 255, 255, 0.8);
             /* Opacité sur les blocs */
             border-radius: 10px;
-            padding: 40px;
+            padding: 55px;
             text-align: center;
             cursor: pointer;
             transition: transform 0.3s;
             box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            
+
         }
 
         .role-block:hover {
@@ -33,10 +39,9 @@
         }
 
         .container {
-            display: flex;
-            justify-content: space-around;
-            max-width: 800px;
             width: 100%;
+
+
         }
 
         .navbar {
@@ -66,6 +71,7 @@
             color: white;
         }
 
+
         .page-content {
             margin-top: 100px;
             /* Ajustement pour laisser de la place à la nav en haut */
@@ -75,10 +81,13 @@
             .container {
                 flex-direction: column;
                 align-items: center;
+                margin: 0 auto;
+                padding-top: 30px;
             }
 
             .role-block {
                 margin-bottom: 30px;
+                margin-left: 10px;
                 /* Ajout du margin entre les deux blocs */
             }
 
@@ -109,12 +118,12 @@
     <div class="page-content">
         <div class="container">
             <div class="row w-100 justify-content-around">
-                <div class="col-md-5 role-block" onclick="window.location.href='login_professeur.php'">
-                    <h2>Je suis Professeur</h2>
+                <div class="col-md-4 role-block" onclick="window.location.href='loginProf.php'">
+                    <h2>Animateur</h2>
                 </div>
 
-                <div class="col-md-5 role-block" onclick="window.location.href='login_etudiant.php'">
-                    <h2>Je suis Étudiant</h2>
+                <div class="col-md-4 role-block" onclick="window.location.href='loginEtud.php'">
+                    <h2>Etudiant</h2>
                 </div>
             </div>
         </div>
