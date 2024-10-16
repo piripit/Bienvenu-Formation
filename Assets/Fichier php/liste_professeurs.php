@@ -1,28 +1,10 @@
-<?php
-// Connexion à la base de données
-$conn = new mysqli('localhost', 'root', '', 'gestion_cours');
-if ($conn->connect_error) {
-    die("Erreur de connexion : " . $conn->connect_error);
-}
-
-// Requête SQL pour récupérer les étudiants, leurs groupes et leurs cours
-$sql = "
-    SELECT e.nom AS etudiant_nom, g.nom AS groupe_nom, c.nom AS cours_nom
-    FROM etudiants e
-    LEFT JOIN groupes g ON e.id_groupe = g.id
-    LEFT JOIN etudiant_cours ec ON e.id = ec.id_etudiant
-    LEFT JOIN cours c ON ec.id_cours = c.id
-    ORDER BY e.nom, g.nom, c.nom";
-$result = $conn->query($sql);
-?>
-
 <!DOCTYPE html>
 <html lang="fr">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Liste des Étudiants - Gestion d'Assiduité</title>
+    <title>Liste des Professeurs - Gestion d'Assiduité</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
@@ -94,7 +76,7 @@ $result = $conn->query($sql);
                         <a class="nav-link" href="administration.php">Administration</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link active" href="liste_etudiants.php">Liste des Étudiants</a>
+                        <a class="nav-link active" href="liste_professeurs.php">Liste des Professeurs</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#">Emploi du temps général</a>
@@ -105,59 +87,46 @@ $result = $conn->query($sql);
     </nav>
 
     <div class="container mt-5">
-        <h2 class="text-center">Liste des Étudiants</h2>
-
-        <!-- Tableau des étudiants, leurs groupes et les cours suivis -->
-        <table class="table table-bordered mt-4">
+        <h2 class="text-center">Liste des Professeurs</h2>
+        <table class="table table-striped table-bordered">
             <thead>
                 <tr>
-                    <th>Nom de l'Étudiant</th>
-                    <th>Groupe</th>
-                    <th>Cours Suivis</th>
+                    <th>ID</th>
+                    <th>Email</th>
+                    <th>Cours</th>
+                    <th>Nombre d'Étudiants</th>
                 </tr>
             </thead>
             <tbody>
                 <?php
-                $current_etudiant = null;
-                $cours_list = [];
+                $conn = new mysqli('localhost', 'root', '', 'gestion_cours');
+                if ($conn->connect_error) {
+                    die("Erreur de connexion : " . $conn->connect_error);
+                }
 
-                if ($result->num_rows > 0) {
-                    while ($row = $result->fetch_assoc()) {
-                        // Si on change d'étudiant, afficher l'ancien avec ses cours
-                        if ($row['etudiant_nom'] !== $current_etudiant && $current_etudiant !== null) {
-                            echo "<tr>";
-                            echo "<td>$current_etudiant</td>";
-                            echo "<td>$current_groupe</td>";
-                            echo "<td>" . implode(', ', $cours_list) . "</td>";
-                            echo "</tr>";
-                            // Réinitialiser la liste des cours
-                            $cours_list = [];
-                        }
+                $result = $conn->query("SELECT p.id AS prof_id, p.email, c.nom AS nom_cours, COUNT(ec.id_etudiant) AS nombre_etudiants
+                                        FROM professeurs p
+                                        JOIN professeur_cours pc ON p.id = pc.id_professeur
+                                        JOIN cours c ON pc.id_cours = c.id
+                                        LEFT JOIN etudiant_cours ec ON c.id = ec.id_cours
+                                        GROUP BY p.id, c.id");
 
-                        // Ajouter le cours actuel à la liste des cours de l'étudiant
-                        $current_etudiant = $row['etudiant_nom'];
-                        $current_groupe = $row['groupe_nom'];
-                        if ($row['cours_nom']) {
-                            $cours_list[] = $row['cours_nom'];
-                        }
-                    }
-
-                    // Afficher le dernier étudiant, son groupe et ses cours
-                    if (!empty($cours_list)) {
-                        echo "<tr>";
-                        echo "<td>$current_etudiant</td>";
-                        echo "<td>$current_groupe</td>";
-                        echo "<td>" . implode(', ', $cours_list) . "</td>";
-                        echo "</tr>";
-                    }
-                } else {
-                    echo "<tr><td colspan='3'>Aucun étudiant trouvé</td></tr>";
+                while ($row = $result->fetch_assoc()) {
+                    echo "<tr>
+                            <td>{$row['prof_id']}</td>
+                            <td>{$row['email']}</td>
+                            <td>{$row['nom_cours']}</td>
+                            <td>{$row['nombre_etudiants']}</td>
+                          </tr>";
                 }
 
                 $conn->close();
                 ?>
             </tbody>
         </table>
+        <div class="text-center">
+            <a href="administration.php" class="btn btn-primary">Retour à l'administration</a>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>

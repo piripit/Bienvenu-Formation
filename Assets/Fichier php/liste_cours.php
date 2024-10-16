@@ -45,9 +45,6 @@
                         <a class="nav-link" href="administration.php">Administration</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="liste_etudiants.php">Liste des Étudiants</a>
-                    </li>
-                    <li class="nav-item">
                         <a class="nav-link active" aria-current="page" href="#">Liste des Cours</a>
                     </li>
                     <li class="nav-item">
