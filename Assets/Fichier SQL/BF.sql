@@ -61,3 +61,17 @@ CREATE TABLE presence (
     FOREIGN KEY (id_groupe) REFERENCES groupes(id),
     FOREIGN KEY (id_etudiant) REFERENCES etudiants(id)
 );
+INSERT INTO groupes (nom) VALUES 
+('BTS 2 SIO Slam'),
+('BTS 2 SIO SISR 1'),
+('BTS 2 SIO SISR 2');
+
+INSERT INTO cours (nom) VALUES 
+('Maths'),
+('Français'),
+('Anglais'),
+('CEJM'),
+('Support'),
+('Option 1 Slam'),
+('Option 2 SISR'),
+('Cybersécurité');
