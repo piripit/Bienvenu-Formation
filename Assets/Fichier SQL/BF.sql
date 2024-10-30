@@ -88,4 +88,11 @@ CREATE TABLE etudiant_cours (
     FOREIGN KEY (id_etudiant) REFERENCES etudiants (id) ON DELETE CASCADE,
     FOREIGN KEY (id_cours) REFERENCES cours (id) ON DELETE CASCADE
 );
-
+CREATE TABLE professeur_groupes (
+    id_professeur INT,
+    id_groupe INT,
+    PRIMARY KEY (id_professeur, id_groupe),
+    FOREIGN KEY (id_professeur) REFERENCES professeurs(id),
+    FOREIGN KEY (id_groupe) REFERENCES groupes(id) -- Assurez-vous que la table groupes existe également
+);
+ALTER TABLE professeurs ADD COLUMN nom VARCHAR(255);

@@ -58,6 +58,11 @@
     <!-- Contenu principal : Liste des Cours -->
     <div class="container mt-5">
         <h2 class="text-center">Liste des Cours</h2>
+        <br>
+        <!-- Bouton pour ajouter un nouveau cours -->
+        <div class="text-center mb-4">
+            <a href="ajouter_cours.php" class="btn btn-success">Ajouter un Nouveau Cours</a>
+        </div>
 
         <!-- Liste des Cours -->
         <ul class="list-group">

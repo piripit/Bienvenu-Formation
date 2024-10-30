@@ -116,52 +116,6 @@
             </div>
         </div>
 
-        <!-- Formulaire d'ajout d'étudiant -->
-        <h3 class="mt-5">Ajouter un Étudiant</h3>
-        <form action="addEtudiant.php" method="POST">
-            <div class="mb-3">
-                <label for="nom" class="form-label">Nom de l'Étudiant</label>
-                <input type="text" class="form-control" id="nom" name="nom" required>
-            </div>
-            <div class="mb-3">
-                <label for="id_groupe" class="form-label">Groupe</label>
-                <select class="form-select" id="id_groupe" name="id_groupe" required>
-                    <?php
-                    $groupes = $conn->query("SELECT * FROM groupes");
-                    while ($groupe = $groupes->fetch_assoc()) {
-                        echo "<option value='{$groupe['id']}'>{$groupe['nom']}</option>";
-                    }
-                    ?>
-                </select>
-            </div>
-            <button type="submit" class="btn btn-primary">Ajouter</button>
-        </form>
-
-        <!-- Formulaire d'ajout de professeur -->
-        <h3 class="mt-5">Ajouter un Professeur</h3>
-        <form action="addProf.php" method="POST">
-            <div class="mb-3">
-                <label for="email" class="form-label">Email du Professeur</label>
-                <input type="email" class="form-control" id="email" name="email" required>
-            </div>
-            <div class="mb-3">
-                <label for="mot_de_passe" class="form-label">Mot de Passe</label>
-                <input type="password" class="form-control" id="mot_de_passe" name="mot_de_passe" required>
-            </div>
-            <div class="mb-3">
-                <label for="cours_ids" class="form-label">Cours</label>
-                <select class="form-select" id="cours_ids" name="cours_ids[]" multiple required>
-                    <?php
-                    $result = $conn->query("SELECT * FROM cours");
-                    while ($cours = $result->fetch_assoc()) {
-                        echo "<option value='{$cours['id']}'>{$cours['nom_cours']}</option>";
-                    }
-                    ?>
-                </select>
-            </div>
-
-            <button type="submit" class="btn btn-primary">Ajouter</button>
-        </form>
         <!-- Formulaire d'ajout de cours -->
         <h3 class="mt-5">Ajouter un Cours</h3>
         <form action="ajouter_cours.php" method="POST">

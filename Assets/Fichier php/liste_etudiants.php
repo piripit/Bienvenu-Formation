@@ -5,14 +5,23 @@ if ($conn->connect_error) {
     die("Erreur de connexion : " . $conn->connect_error);
 }
 
+// Vérifier si une demande de suppression a été faite
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['delete_id'])) {
+    $delete_id = $conn->real_escape_string($_POST['delete_id']);
+
+    // Supprimer l'étudiant de la base de données
+    $conn->query("DELETE FROM etudiants WHERE id = $delete_id");
+    $conn->query("DELETE FROM etudiant_cours WHERE id_etudiant = $delete_id");
+}
+
 // Requête SQL pour récupérer les étudiants, leurs groupes et leurs cours
 $sql = "
-    SELECT e.nom AS etudiant_nom, g.nom AS groupe_nom, c.nom AS cours_nom
+        SELECT e.id AS etudiant_id, e.nom AS etudiant_nom, g.nom AS groupe_nom, c.nom AS cours_nom
     FROM etudiants e
     LEFT JOIN groupes g ON e.id_groupe = g.id
     LEFT JOIN etudiant_cours ec ON e.id = ec.id_etudiant
     LEFT JOIN cours c ON ec.id_cours = c.id
-    ORDER BY e.nom, g.nom, c.nom";
+    ORDER BY g.nom, e.nom";
 $result = $conn->query($sql);
 ?>
 
@@ -27,7 +36,6 @@ $result = $conn->query($sql);
     <style>
         body {
             background-color: #f8f9fa;
-            /* Fond léger */
         }
 
         h2 {
@@ -36,26 +44,20 @@ $result = $conn->query($sql);
 
         table {
             background-color: white;
-            /* Fond blanc pour la table */
             border-radius: 5px;
             overflow: hidden;
-            /* Pour arrondir les coins de la table */
         }
 
         thead {
             background-color: #0056b3;
-            /* Couleur de fond de l'en-tête */
             color: white;
-            /* Couleur du texte de l'en-tête */
         }
 
         th,
         td {
             vertical-align: middle;
-            /* Alignement vertical */
         }
 
-        /* Styles de la barre de navigation */
         .navbar {
             background-color: #0056b3;
         }
@@ -80,7 +82,6 @@ $result = $conn->query($sql);
 
 <body>
 
-    <!-- Barre de navigation -->
     <nav class="navbar navbar-expand-lg navbar-light">
         <div class="container-fluid">
             <a class="navbar-brand" href="#">Gestion d'assiduité</a>
@@ -105,53 +106,47 @@ $result = $conn->query($sql);
     </nav>
 
     <div class="container mt-5">
-        <h2 class="text-center">Liste des Étudiants</h2>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="text-center">Liste des Étudiants</h2>
+            <a href="addEtudiant.php" class="btn btn-primary">Ajouter un Étudiant</a>
+        </div>
 
-        <!-- Tableau des étudiants, leurs groupes et les cours suivis -->
         <table class="table table-bordered mt-4">
             <thead>
                 <tr>
                     <th>Nom de l'Étudiant</th>
                     <th>Groupe</th>
                     <th>Cours Suivis</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 <?php
-                $current_etudiant = null;
-                $cours_list = [];
+                $current_groupe = null;
 
                 if ($result->num_rows > 0) {
                     while ($row = $result->fetch_assoc()) {
-                        // Si on change d'étudiant, afficher l'ancien avec ses cours
-                        if ($row['etudiant_nom'] !== $current_etudiant && $current_etudiant !== null) {
-                            echo "<tr>";
-                            echo "<td>$current_etudiant</td>";
-                            echo "<td>$current_groupe</td>";
-                            echo "<td>" . implode(', ', $cours_list) . "</td>";
-                            echo "</tr>";
-                            // Réinitialiser la liste des cours
-                            $cours_list = [];
+                        // Si on change de groupe, afficher un nouvel en-tête de groupe
+                        if ($row['groupe_nom'] !== $current_groupe) {
+                            $current_groupe = $row['groupe_nom'];
+                            echo "<tr><th colspan='4' class='bg-secondary text-white'>Groupe : $current_groupe</th></tr>";
                         }
 
-                        // Ajouter le cours actuel à la liste des cours de l'étudiant
-                        $current_etudiant = $row['etudiant_nom'];
-                        $current_groupe = $row['groupe_nom'];
-                        if ($row['cours_nom']) {
-                            $cours_list[] = $row['cours_nom'];
-                        }
-                    }
-
-                    // Afficher le dernier étudiant, son groupe et ses cours
-                    if (!empty($cours_list)) {
+                        // Afficher les informations de l'étudiant
                         echo "<tr>";
-                        echo "<td>$current_etudiant</td>";
-                        echo "<td>$current_groupe</td>";
-                        echo "<td>" . implode(', ', $cours_list) . "</td>";
+                        echo "<td>{$row['etudiant_nom']}</td>";
+                        echo "<td>{$row['groupe_nom']}</td>";
+                        echo "<td>{$row['cours_nom']}</td>";
+                        echo "<td>
+                                <form action='' method='POST' style='display: inline;'>
+                                    <input type='hidden' name='delete_id' value='{$row['etudiant_id']}'>
+                                    <button type='submit' class='btn btn-danger btn-sm' onclick='return confirm(\"Êtes-vous sûr de vouloir supprimer cet étudiant ?\");'>Supprimer</button>
+                                </form>
+                              </td>";
                         echo "</tr>";
                     }
                 } else {
-                    echo "<tr><td colspan='3'>Aucun étudiant trouvé</td></tr>";
+                    echo "<tr><td colspan='4'>Aucun étudiant trouvé</td></tr>";
                 }
 
                 $conn->close();
