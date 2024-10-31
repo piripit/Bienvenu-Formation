@@ -13,8 +13,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $name = $conn->real_escape_string($_POST['name']);
     $email = $conn->real_escape_string($_POST['email']);
     $password = $_POST['password'];
-    $courses = $_POST['courses']; // Cours sélectionnés (tableau)
-    $groups = $_POST['groups']; // Groupes sélectionnés (tableau)
+    $courses = $_POST['courses'] ?? []; // Cours sélectionnés (tableau)
+    $groups = $_POST['groups'] ?? []; // Groupes sélectionnés (tableau)
 
     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
@@ -24,7 +24,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     if ($stmt->execute()) {
         $prof_id = $stmt->insert_id;
-
+       
         // Assignation du professeur aux cours sélectionnés
         if (!empty($courses)) {
             $stmt_course = $conn->prepare("INSERT INTO professeur_cours (id_professeur, id_cours) VALUES (?, ?)");
@@ -143,26 +143,32 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <input type="password" class="form-control" id="password" name="password" required>
             </div>
             <div class="mb-3">
-                <label for="courses" class="form-label">Cours</label>
-                <select class="form-select" id="courses" name="courses[]" multiple required>
+                <label class="form-label">Cours</label>
+                <div>
                     <?php
                     $cours = $conn->query("SELECT id, nom FROM cours");
                     while ($course = $cours->fetch_assoc()) {
-                        echo "<option value='{$course['id']}'>{$course['nom']}</option>";
+                        echo "<div class='form-check'>
+                                <input class='form-check-input' type='checkbox' name='courses[]' value='{$course['id']}' id='course{$course['id']}'>
+                                <label class='form-check-label' for='course{$course['id']}'>{$course['nom']}</label>
+                              </div>";
                     }
                     ?>
-                </select>
+                </div>
             </div>
             <div class="mb-3">
-                <label for="groups" class="form-label">Groupes</label>
-                <select class="form-select" id="groups" name="groups[]" multiple required>
+                <label class="form-label">Groupes</label>
+                <div>
                     <?php
                     $groupes = $conn->query("SELECT id, nom FROM groupes");
                     while ($group = $groupes->fetch_assoc()) {
-                        echo "<option value='{$group['id']}'>{$group['nom']}</option>";
+                        echo "<div class='form-check'>
+                                <input class='form-check-input' type='checkbox' name='groups[]' value='{$group['id']}' id='group{$group['id']}'>
+                                <label class='form-check-label' for='group{$group['id']}'>{$group['nom']}</label>
+                              </div>";
                     }
                     ?>
-                </select>
+                </div>
             </div>
             <button type="submit" class="btn btn-primary w-100">Ajouter Professeur</button>
         </form>

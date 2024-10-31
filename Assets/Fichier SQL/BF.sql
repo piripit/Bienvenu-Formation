@@ -96,3 +96,14 @@ CREATE TABLE professeur_groupes (
     FOREIGN KEY (id_groupe) REFERENCES groupes(id) -- Assurez-vous que la table groupes existe également
 );
 ALTER TABLE professeurs ADD COLUMN nom VARCHAR(255);
+
+CREATE TABLE appel (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_cours INT NOT NULL,
+    id_etudiant INT NOT NULL,
+    present TINYINT(1) DEFAULT 0,
+    signe TINYINT(1) DEFAULT 0,
+    cloture TINYINT(1) DEFAULT 0,
+    FOREIGN KEY (id_cours) REFERENCES cours(id),  -- Assurez-vous que la table cours existe
+    FOREIGN KEY (id_etudiant) REFERENCES etudiants(id)  -- Assurez-vous que la table etudiants existe
+);

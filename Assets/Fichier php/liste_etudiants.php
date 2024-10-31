@@ -9,18 +9,20 @@ if ($conn->connect_error) {
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['delete_id'])) {
     $delete_id = $conn->real_escape_string($_POST['delete_id']);
 
-    // Supprimer l'étudiant de la base de données
+    // Supprimer l'étudiant de la base de données ainsi que ses affectations de cours
     $conn->query("DELETE FROM etudiants WHERE id = $delete_id");
     $conn->query("DELETE FROM etudiant_cours WHERE id_etudiant = $delete_id");
 }
 
-// Requête SQL pour récupérer les étudiants, leurs groupes et leurs cours
+// Requête SQL pour récupérer les étudiants avec leurs groupes et cours en une seule ligne
 $sql = "
-        SELECT e.id AS etudiant_id, e.nom AS etudiant_nom, g.nom AS groupe_nom, c.nom AS cours_nom
+    SELECT e.id AS etudiant_id, e.nom AS etudiant_nom, g.nom AS groupe_nom,
+           GROUP_CONCAT(c.nom SEPARATOR ', ') AS cours_nom
     FROM etudiants e
     LEFT JOIN groupes g ON e.id_groupe = g.id
     LEFT JOIN etudiant_cours ec ON e.id = ec.id_etudiant
     LEFT JOIN cours c ON ec.id_cours = c.id
+    GROUP BY e.id
     ORDER BY g.nom, e.nom";
 $result = $conn->query($sql);
 ?>
@@ -77,6 +79,12 @@ $result = $conn->query($sql);
             background-color: rgba(255, 255, 255, 0.2);
             border-radius: 4px;
         }
+
+        .group-header {
+            background-color: #6c757d;
+            color: white;
+            font-weight: bold;
+        }
     </style>
 </head>
 
@@ -85,8 +93,7 @@ $result = $conn->query($sql);
     <nav class="navbar navbar-expand-lg navbar-light">
         <div class="container-fluid">
             <a class="navbar-brand" href="#">Gestion d'assiduité</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
@@ -129,10 +136,10 @@ $result = $conn->query($sql);
                         // Si on change de groupe, afficher un nouvel en-tête de groupe
                         if ($row['groupe_nom'] !== $current_groupe) {
                             $current_groupe = $row['groupe_nom'];
-                            echo "<tr><th colspan='4' class='bg-secondary text-white'>Groupe : $current_groupe</th></tr>";
+                            echo "<tr class='group-header'><td colspan='4'>Groupe : $current_groupe</td></tr>";
                         }
 
-                        // Afficher les informations de l'étudiant
+                        // Afficher les informations de l'étudiant avec ses cours regroupés
                         echo "<tr>";
                         echo "<td>{$row['etudiant_nom']}</td>";
                         echo "<td>{$row['groupe_nom']}</td>";
@@ -142,6 +149,7 @@ $result = $conn->query($sql);
                                     <input type='hidden' name='delete_id' value='{$row['etudiant_id']}'>
                                     <button type='submit' class='btn btn-danger btn-sm' onclick='return confirm(\"Êtes-vous sûr de vouloir supprimer cet étudiant ?\");'>Supprimer</button>
                                 </form>
+                                 <a href='editEtudiant.php?id={$row['etudiant_id']}' class='btn btn-warning btn-sm'>Modifier</a>
                               </td>";
                         echo "</tr>";
                     }

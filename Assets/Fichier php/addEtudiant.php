@@ -135,16 +135,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             <div class="mb-3">
                 <label for="id_cours" class="form-label">Cours</label>
-                <select class="form-select" id="id_cours" name="id_cours[]" multiple required>
+                <div>
                     <?php
-                    // Récupérer les cours
                     $cours = $conn->query("SELECT * FROM cours");
                     while ($cour = $cours->fetch_assoc()) {
-                        echo "<option value='{$cour['id']}'>{$cour['nom']}</option>";
+                        echo "<div class='form-check'>
+                    <input class='form-check-input' type='checkbox' name='id_cours[]' value='{$cour['id']}' id='cours{$cour['id']}'>
+                    <label class='form-check-label' for='cours{$cour['id']}'>{$cour['nom']}</label>
+                  </div>";
                     }
                     ?>
-                </select>
+                </div>
             </div>
+
 
             <button type="submit" class="btn btn-primary w-100">Ajouter</button>
         </form>

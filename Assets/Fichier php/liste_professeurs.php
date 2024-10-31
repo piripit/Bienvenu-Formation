@@ -81,6 +81,9 @@ $professeurs = $conn->query("SELECT * FROM professeurs");
                     <li class="nav-item">
                         <a class="nav-link " href="addProf.php">Ajouter Professeur</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Emploi du temps général</a>
+                    </li>
                 </ul>
             </div>
         </div>

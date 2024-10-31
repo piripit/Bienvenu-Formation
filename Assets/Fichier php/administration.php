@@ -116,16 +116,6 @@
             </div>
         </div>
 
-        <!-- Formulaire d'ajout de cours -->
-        <h3 class="mt-5">Ajouter un Cours</h3>
-        <form action="ajouter_cours.php" method="POST">
-            <div class="mb-3">
-                <label for="nom_cours" class="form-label">Nom du Cours</label>
-                <input type="text" class="form-control" id="nom_cours" name="nom_cours" required>
-            </div>
-            <button type="submit" class="btn btn-primary">Ajouter</button>
-        </form>
-
         <!-- Fermeture de la connexion à la base de données -->
         <?php $conn->close(); ?>
     </div>
