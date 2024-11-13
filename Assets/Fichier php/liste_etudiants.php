@@ -149,7 +149,7 @@ $result = $conn->query($sql);
                                     <input type='hidden' name='delete_id' value='{$row['etudiant_id']}'>
                                     <button type='submit' class='btn btn-danger btn-sm' onclick='return confirm(\"Êtes-vous sûr de vouloir supprimer cet étudiant ?\");'>Supprimer</button>
                                 </form>
-                                 <a href='editEtudiant.php?id={$row['etudiant_id']}' class='btn btn-warning btn-sm'>Modifier</a>
+                                 <a href='modif_Etudiant.php?id={$row['etudiant_id']}' class='btn btn-warning btn-sm'>Modifier</a>
                               </td>";
                         echo "</tr>";
                     }
