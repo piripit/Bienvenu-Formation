@@ -107,3 +107,24 @@ CREATE TABLE appel (
     FOREIGN KEY (id_cours) REFERENCES cours(id),  -- Assurez-vous que la table cours existe
     FOREIGN KEY (id_etudiant) REFERENCES etudiants(id)  -- Assurez-vous que la table etudiants existe
 );
+DROP TABLE appel;
+DROP TABLE presence;
+CREATE TABLE emploi_du_temps_professeur (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_professeur INT NOT NULL,
+    id_cours INT NOT NULL,
+    date_heure DATETIME NOT NULL,
+    FOREIGN KEY (id_professeur) REFERENCES professeurs(id),
+    FOREIGN KEY (id_cours) REFERENCES cours(id)
+);
+
+CREATE TABLE emploi_du_temps_etudiant (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_etudiant INT NOT NULL,
+    id_cours INT NOT NULL,
+    date_heure DATETIME NOT NULL,
+    FOREIGN KEY (id_etudiant) REFERENCES etudiants(id),
+    FOREIGN KEY (id_cours) REFERENCES cours(id)
+);
+SELECT id FROM cours WHERE id_professeur = {$professeur['id']} ORDER BY RAND() LIMIT 1 ;
+SELECT id FROM cours WHERE id_professeur = :id_professeur ORDER BY RAND() LIMIT 1;

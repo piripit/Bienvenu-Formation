@@ -14,6 +14,13 @@ if (isset($_GET['id'])) {
     if (!$etudiant) {
         die("Étudiant non trouvé !");
     }
+
+    // Récupérer les ID des cours actuellement associés à l'étudiant
+    $current_courses_result = $conn->query("SELECT id_cours FROM etudiant_cours WHERE id_etudiant = $id_etudiant");
+    $current_courses = [];
+    while ($row = $current_courses_result->fetch_assoc()) {
+        $current_courses[] = $row['id_cours'];
+    }
 } else {
     die("ID de l'étudiant non spécifié !");
 }
@@ -28,21 +35,28 @@ $cours = $conn->query("SELECT id, nom FROM cours");
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nom = $_POST['nom'];
     $groupe_id = $_POST['groupe']; // ID du groupe sélectionné
-    $cours_id = $_POST['cours']; // ID du cours sélectionné
+    $selected_courses = isset($_POST['cours']) ? $_POST['cours'] : []; // IDs des cours sélectionnés
 
-    // Préparer la requête de mise à jour
-    $stmt = $conn->prepare("UPDATE etudiants SET nom = ?, id_groupe = ?, nom_cours = ? WHERE id = ?");
-    $stmt->bind_param("siii", $nom, $groupe_id, $cours_id, $id_etudiant);
-
-    if ($stmt->execute()) {
-        // Redirection après mise à jour
-        header("Location: liste_etudiants.php");
-        exit();
-    } else {
-        echo "Erreur lors de la mise à jour : " . $stmt->error;
-    }
-
+    // Mettre à jour le nom et le groupe de l'étudiant
+    $stmt = $conn->prepare("UPDATE etudiants SET nom = ?, id_groupe = ? WHERE id = ?");
+    $stmt->bind_param("sii", $nom, $groupe_id, $id_etudiant);
+    $stmt->execute();
     $stmt->close();
+
+    // Supprimer les associations actuelles entre l'étudiant et les cours
+    $conn->query("DELETE FROM etudiant_cours WHERE id_etudiant = $id_etudiant");
+
+    // Insérer les nouvelles associations pour les cours sélectionnés
+    $stmt = $conn->prepare("INSERT INTO etudiant_cours (id_etudiant, id_cours) VALUES (?, ?)");
+    foreach ($selected_courses as $course_id) {
+        $stmt->bind_param("ii", $id_etudiant, $course_id);
+        $stmt->execute();
+    }
+    $stmt->close();
+
+    // Redirection après mise à jour
+    header("Location: liste_etudiants.php");
+    exit();
 }
 
 $conn->close();
@@ -55,60 +69,61 @@ $conn->close();
     <meta charset="UTF-8">
     <title>Modifier l'étudiant</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+        }
+
+        table {
+            background-color: white;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        thead {
+            background-color: #0056b3;
+            color: white;
+        }
+
+        th,
+        td {
+            vertical-align: middle;
+        }
+
+        .navbar {
+            background-color: #0056b3;
+        }
+
+        .navbar-brand,
+        .nav-link {
+            color: white !important;
+        }
+
+        .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+
+        .active {
+            font-weight: bold;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+
+        .group-header {
+            background-color: #6c757d;
+            color: white;
+            font-weight: bold;
+        }
+    </style>
 </head>
-<style>
-    body {
-        background-color: #f8f9fa;
-    }
-
-    h2 {
-        margin-bottom: 20px;
-    }
-
-    table {
-        background-color: white;
-        border-radius: 5px;
-        overflow: hidden;
-    }
-
-    thead {
-        background-color: #0056b3;
-        color: white;
-    }
-
-    th,
-    td {
-        vertical-align: middle;
-    }
-
-    .navbar {
-        background-color: #0056b3;
-    }
-
-    .navbar-brand,
-    .nav-link {
-        color: white !important;
-    }
-
-    .nav-link:hover {
-        background-color: rgba(255, 255, 255, 0.2);
-        border-radius: 4px;
-    }
-
-    .active {
-        font-weight: bold;
-        background-color: rgba(255, 255, 255, 0.2);
-        border-radius: 4px;
-    }
-
-    .group-header {
-        background-color: #6c757d;
-        color: white;
-        font-weight: bold;
-    }
-</style>
 
 <body>
+
     <nav class="navbar navbar-expand-lg navbar-light">
         <div class="container-fluid">
             <a class="navbar-brand" href="#">Gestion d'assiduité</a>
@@ -148,17 +163,21 @@ $conn->close();
                     <?php endwhile; ?>
                 </select>
             </div>
+
             <div class="mb-3">
-                <label for="cours" class="form-label">Cours :</label>
-                <select id="cours" name="cours" class="form-control">
-                    <option value="">Sélectionner un cours</option>
+                <label class="form-label">Cours :</label>
+                <div class="form-check">
                     <?php while ($cour = $cours->fetch_assoc()): ?>
-                        <option value="<?php echo $cour['id']; ?>" <?php echo ($cour['id'] == $etudiant['nom']) ? 'selected' : ''; ?>>
+                        <input type="checkbox" class="form-check-input" name="cours[]" value="<?php echo $cour['id']; ?>"
+                            <?php echo (in_array($cour['id'], $current_courses)) ? 'checked' : ''; ?>>
+                        <label class="form-check-label">
                             <?php echo htmlspecialchars($cour['nom']); ?>
-                        </option>
+                        </label>
+                        <br>
                     <?php endwhile; ?>
-                </select>
+                </div>
             </div>
+
             <button type="submit" class="btn btn-primary">Mettre à jour</button>
             <a href="liste_etudiants.php" class="btn btn-secondary">Annuler</a>
         </form>

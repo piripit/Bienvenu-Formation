@@ -54,7 +54,7 @@
                         <a class="nav-link" href="liste_professeurs.php">Liste des Professeurs</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Emploi du temps général</a>
+                        <a class="nav-link" href="emploi_du_temps_admin.php">Emploi du temps général</a>
                     </li>
                 </ul>
             </div>
