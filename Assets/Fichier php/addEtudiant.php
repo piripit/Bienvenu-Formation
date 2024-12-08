@@ -1,44 +1,80 @@
 <?php
-// Connexion à la base de données
 $conn = new mysqli('localhost', 'root', '', 'gestion_cours');
 if ($conn->connect_error) {
     die("Erreur de connexion : " . $conn->connect_error);
 }
+class FormsSent
+{
 
-$modalMessage = '';
-$modalType = ''; // 'success' ou 'error' pour indiquer le type de modal
 
-// Si le formulaire est soumis
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $nom = $conn->real_escape_string($_POST['nom']);
-    $id_groupe = $conn->real_escape_string($_POST['id_groupe']);
-    $id_cours = $_POST['id_cours']; // Tableau des cours choisis
+    public $modalMessage = '';
+    public $modalType = '';
+    private $conn;
+    private $insertStudentsCours = "INSERT INTO etudiant_cours (id_etudiant, id_cours) VALUES (?, ?)";
+    private $insertStudents = "INSERT INTO etudiants (nom, id_groupe) VALUES (?, ?)";
 
-    // Préparation de la requête pour insérer un étudiant
-    $stmt = $conn->prepare("INSERT INTO etudiants (nom, id_groupe) VALUES (?, ?)");
-    $stmt->bind_param("si", $nom, $id_groupe);
+    public function __construct($dbConn)
+    {
+        $this->conn = $dbConn; // Récupérer la connexion passée en paramètre
+    }
 
-    if ($stmt->execute()) {
-        $id_etudiant = $stmt->insert_id;
+    // Méthode pour l'envoi du formulaire 
+    public function formssent()
+    {
+        if ($_SERVER["REQUEST_METHOD"] == "POST") {
+            $nom = $this->conn->real_escape_string($_POST['nom']);
+            $id_groupe = $this->conn->real_escape_string($_POST['id_groupe']);
+            $id_cours = $_POST['id_cours'];
 
-        // Affecter l'étudiant aux cours
-        if (!empty($id_cours)) {
-            $stmt_cours = $conn->prepare("INSERT INTO etudiant_cours (id_etudiant, id_cours) VALUES (?, ?)");
-            foreach ($id_cours as $cours) {
-                $stmt_cours->bind_param("ii", $id_etudiant, $cours);
-                $stmt_cours->execute();
+            // Appel des méthodes pour insérer les données
+            $id_etudiant = $this->insertStudents($nom, $id_groupe);
+            if ($id_etudiant) {
+                $this->insertStudentsCours($id_etudiant, $id_cours);
             }
         }
+    }
+    // Méthode pour insérer un étudiant
+    private function insertStudents($nom, $id_groupe)
+    {
+        $stmt = $this->conn->prepare($this->insertStudents);
+        $stmt->bind_param("si", $nom, $id_groupe);
+        if ($stmt->execute()) {
+            return $stmt->insert_id; // Récupérer l'ID de l'étudiant inséré
+        } else {
+            $this->modalMessage = "Erreur lors de l'ajout de l'étudiant : " . $this->conn->error;
+            $this->modalType = 'error';
+            return false;
+        }
+    }
+    private function insertStudentsCours($id_etudiant, $id_cours)
+    {
 
-        // Message de succès pour la modal
-        $modalMessage = "L'étudiant a été ajouté avec succès.";
-        $modalType = 'success';
-    } else {
-        // Message d'erreur pour la modal
-        $modalMessage = "Erreur lors de l'ajout de l'étudiant : " . $conn->error;
-        $modalType = 'error';
+        if (!empty($id_cours)) {
+            $stmt_cours = $this->conn->prepare($this->insertStudentsCours);
+            foreach ($id_cours as $cours) {
+                $stmt_cours->bind_param("ii", $id_etudiant, $cours);
+                if (!$stmt_cours->execute()) {
+                    $this->modalMessage = "Erreur lors de l'association cours : " . $this->conn->error;
+                    $this->modalType = 'error';
+                    return;
+                }
+            }
+            $this->modalMessage = "L'étudiant a été ajouté avec succès.";
+            $this->modalType = 'success';
+        } else {
+            $this->modalMessage = "Aucun cours sélectionné.";
+            $this->modalType = 'warning';
+        }
     }
 }
+
+
+// Instanciation de la classe et appel de la méthode
+$formHandler = new FormsSent($conn);
+$formHandler->formssent();
+
+// Gestion des messages modaux
+echo $formHandler->modalMessage;
 ?>
 
 <!DOCTYPE html>
@@ -124,7 +160,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <label for="id_groupe" class="form-label">Groupe</label>
                 <select class="form-select" id="id_groupe" name="id_groupe" required>
                     <?php
-                    // Récupérer les groupes
                     $groupes = $conn->query("SELECT * FROM groupes");
                     while ($groupe = $groupes->fetch_assoc()) {
                         echo "<option value='{$groupe['id']}'>{$groupe['nom']}</option>";
@@ -148,7 +183,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 </div>
             </div>
 
-
             <button type="submit" class="btn btn-primary w-100">Ajouter</button>
         </form>
     </div>
@@ -159,12 +193,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="resultModalLabel">
-                        <?php echo ($modalType === 'success') ? 'Succès' : 'Erreur'; ?>
+                        <?php echo ($formHandler->modalType === 'success') ? 'Succès' : 'Erreur'; ?>
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <?php echo $modalMessage; ?>
+                    <?php echo $formHandler->modalMessage; ?>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
@@ -176,7 +210,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- Script pour afficher automatiquement la modal si une action a eu lieu -->
-    <?php if ($modalMessage): ?>
+    <?php if ($formHandler->modalMessage): ?>
         <script>
             var resultModal = new bootstrap.Modal(document.getElementById('resultModal'));
             resultModal.show();

@@ -1,31 +1,50 @@
 <?php
 // Connexion à la base de données
-$conn = new mysqli('localhost', 'root', '', 'gestion_cours');
-if ($conn->connect_error) {
-    die("Erreur de connexion : " . $conn->connect_error);
+$dbname = 'gestion_cours';
+$username = 'root';
+$password = '';
+$host = 'localhost';
+
+try {
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die("Erreur de connexion : " . $e->getMessage());
 }
+class VerifyDataSent
+{
+    private $pdo;
+    private $updateGroupStudent = "UPDATE etudiants SET id_groupe = :id_groupe WHERE id = :id";
 
-// Vérifier si les données ont été soumises
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $id = $_POST['id'];
-    $id_groupe = $_POST['id_groupe'];
+    public function __construct($dbConn)
+    {
+        $this->pdo = $dbConn; // Récupérer la connexion PDO passée en paramètre
+    }
 
-    // Vérifier que le groupe est sélectionné
-    if (!empty($id_groupe)) {
-        // Requête pour mettre à jour le groupe de l'étudiant
-        $query = "UPDATE etudiants SET id_groupe = ? WHERE id = ?";
-        $stmt = $conn->prepare($query);
-        $stmt->bind_param('ii', $id_groupe, $id);
+    public function updateGroupStudent()
+    {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $id = $_POST['id'];
+            $id_groupe = $_POST['id_groupe'];
 
-        if ($stmt->execute()) {
-            echo "L'étudiant a été affecté avec succès au groupe.";
-        } else {
-            echo "Erreur lors de l'affectation de l'étudiant au groupe : " . $stmt->error;
+            if (!empty($id_groupe)) {
+                $stmt = $this->pdo->prepare($this->updateGroupStudent);
+                $stmt->bindParam(':id_groupe', $id_groupe, PDO::PARAM_INT);
+                $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+
+                try {
+                    if ($stmt->execute()) {
+                        echo "L'étudiant a été affecté avec succès au groupe.";
+                    } else {
+                        echo "Erreur lors de l'affectation de l'étudiant au groupe.";
+                    }
+                } catch (Exception $e) {
+                    echo "Erreur : " . $e->getMessage();
+                }
+            } else {
+                echo "Veuillez sélectionner un groupe.";
+            }
         }
-
-        $stmt->close();
-    } else {
-        echo "Veuillez sélectionner un groupe.";
     }
 }
 

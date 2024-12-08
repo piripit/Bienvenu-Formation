@@ -1,27 +1,54 @@
 <?php
-// Connexion à la base de données
-$conn = new mysqli('localhost', 'root', '', 'gestion_cours');
-if ($conn->connect_error) {
-    die("Erreur de connexion : " . $conn->connect_error);
+// Connex$host = 'localhost';
+$dbname = 'gestion_cours';
+$username = 'root';
+$password = '';
+$host = 'localhost';
+
+try {
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die("Erreur de connexion : " . $e->getMessage());
 }
+class FormSent
+{
+    public $modalMessage = '';
+    public $modalType = '';
+    private $pdo;
+    private $insertCours = "INSERT INTO cours (nom) VALUES (:nom)";
 
-$modalMessage = '';
-$modalType = '';
+    public function __construct($dbconn)
+    {
+        $this->pdo = $dbconn; // Connexion PDO
+    }
 
-// Si le formulaire est soumis
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $nom = $conn->real_escape_string($_POST['nom']);
+    public function insertCours()
+    {
+        if ($_SERVER["REQUEST_METHOD"] == "POST") {
+            $nom = $_POST['nom'] ?? '';
 
-    // Requête pour ajouter un cours
-    $stmt = $conn->prepare("INSERT INTO cours (nom) VALUES (?)");
-    $stmt->bind_param("s", $nom);
+            if (!empty($nom)) {
+                try {
+                    $stmt = $this->pdo->prepare($this->insertCours);
+                    $stmt->bindParam(':nom', $nom, PDO::PARAM_STR);
 
-    if ($stmt->execute()) {
-        $modalMessage = "Le cours a été ajouté avec succès.";
-        $modalType = 'success';
-    } else {
-        $modalMessage = "Erreur lors de l'ajout du cours : " . $conn->error;
-        $modalType = 'error';
+                    if ($stmt->execute()) {
+                        $this->modalMessage = "Le cours a été ajouté avec succès.";
+                        $this->modalType = 'success';
+                    } else {
+                        $this->modalMessage = "Erreur lors de l'ajout du cours.";
+                        $this->modalType = 'error';
+                    }
+                } catch (Exception $e) {
+                    $this->modalMessage = "Erreur lors de l'ajout du cours : " . $e->getMessage();
+                    $this->modalType = 'error';
+                }
+            } else {
+                $this->modalMessage = "Le champ nom est requis.";
+                $this->modalType = 'error';
+            }
+        }
     }
 }
 ?>

@@ -128,3 +128,16 @@ CREATE TABLE emploi_du_temps_etudiant (
 );
 SELECT id FROM cours WHERE id_professeur = {$professeur['id']} ORDER BY RAND() LIMIT 1 ;
 SELECT id FROM cours WHERE id_professeur = :id_professeur ORDER BY RAND() LIMIT 1;
+DELIMITER //
+
+CREATE TRIGGER after_professeur_cours_insert
+AFTER INSERT ON professeur_cours
+FOR EACH ROW
+BEGIN
+    UPDATE cours
+    SET id_professeur = NEW.id_professeur
+    WHERE id = NEW.id_cours;
+END;
+//
+
+DELIMITER ;
