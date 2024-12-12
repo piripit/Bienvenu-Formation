@@ -68,31 +68,53 @@
         <ul class="list-group">
             <?php
             // Connexion à la base de données
-            $conn = new mysqli('localhost', 'root', '', 'gestion_cours');
-            if ($conn->connect_error) {
-                die("Erreur de connexion : " . $conn->connect_error);
+            $dbname = 'gestion_cours';
+            $username = 'root';
+            $password = '';
+            $host = 'localhost';
+
+            try {
+                $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
+                $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            } catch (PDOException $e) {
+                die("Erreur de connexion : " . $e->getMessage());
             }
+            class VerifyShowSubject
+            {
+                private $pdo;
+                private $showCours = "SELECT * FROM cours";
 
-            // Requête pour récupérer les cours
-            $cours = $conn->query("SELECT * FROM cours");
-
-            // Vérifier s'il y a des cours à afficher
-            if ($cours->num_rows > 0) {
-                // Affichage de chaque cours avec un bouton de suppression
-                while ($course = $cours->fetch_assoc()) {
-                    echo "<li class='list-group-item d-flex justify-content-between align-items-center'>{$course['nom']}
-                    <form action='supprimer_cours.php' method='POST' style='display:inline;'>
-                        <input type='hidden' name='id' value='{$course['id']}'>
-                        <button type='submit' class='btn btn-danger btn-sm'>Supprimer</button>
-                    </form>
-                    </li>";
+                public function __construct($dbconn)
+                {
+                    $this->pdo = $dbconn; // Connexion PDO
                 }
-            } else {
-                echo "<li class='list-group-item'>Aucun cours n'a été ajouté pour le moment.</li>";
-            }
+                public function VerifyToShowSubject()
+                {
+                    try {
+                        // Exécution de la requête
+                        $stmt = $this->pdo->query($this->showCours);
+                        $courses = $stmt->fetchAll(PDO::FETCH_ASSOC); // Récupère les résultats sous forme de tableau associatif
 
-            // Fermeture de la connexion à la base de données
-            $conn->close();
+                        // Vérifie s'il y a des cours
+                        if (!empty($courses)) {
+                            foreach ($courses as $course) {
+                                echo "<li class='list-group-item d-flex justify-content-between align-items-center'>{$course['nom']}
+                                <form action='supprimer_cours.php' method='POST' style='display:inline;'>
+                                    <input type='hidden' name='id' value='{$course['id']}'>
+                                    <button type='submit' class='btn btn-danger btn-sm'>Supprimer</button>
+                                </form>
+                                </li>";
+                            }
+                        } else {
+                            echo "<li class='list-group-item'>Aucun cours n'a été ajouté pour le moment.</li>";
+                        }
+                    } catch (PDOException $e) {
+                        die("Erreur lors de la récupération des cours : " . $e->getMessage());
+                    }
+                }
+            }
+            $subjectVerifier = new VerifyShowSubject($pdo);
+            $subjectVerifier->VerifyToShowSubject();
             ?>
         </ul>
     </div>

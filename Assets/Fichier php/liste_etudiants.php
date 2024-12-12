@@ -1,31 +1,71 @@
 <?php
+class VerifyInfoStudents
+{
+    private $pdo;
+
+    public function __construct($dbconn)
+    {
+        $this->pdo = $dbconn; // Connexion PDO
+    }
+
+    public function deleteStudent($studentId)
+    {
+        try {
+            // Supprimer les cours associés à l'étudiant
+            $stmt1 = $this->pdo->prepare("DELETE FROM etudiant_cours WHERE id_etudiant = :id_etudiant");
+            $stmt1->bindParam(':id_etudiant', $studentId, PDO::PARAM_INT);
+            $stmt1->execute();
+
+            // Supprimer l'étudiant
+            $stmt2 = $this->pdo->prepare("DELETE FROM etudiants WHERE id = :id");
+            $stmt2->bindParam(':id', $studentId, PDO::PARAM_INT);
+            $stmt2->execute();
+        } catch (PDOException $e) {
+            die("Erreur lors de la suppression de l'étudiant : " . $e->getMessage());
+        }
+    }
+
+    public function getStudents()
+    {
+        try {
+            $sql = "
+                SELECT e.id AS etudiant_id, e.nom AS etudiant_nom, g.nom AS groupe_nom,
+                       GROUP_CONCAT(c.nom SEPARATOR ', ') AS cours_nom
+                FROM etudiants e
+                LEFT JOIN groupes g ON e.id_groupe = g.id
+                LEFT JOIN etudiant_cours ec ON e.id = ec.id_etudiant
+                LEFT JOIN cours c ON ec.id_cours = c.id
+                GROUP BY e.id
+                ORDER BY g.nom, e.nom";
+
+            $stmt = $this->pdo->query($sql);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            die("Erreur lors de la récupération des étudiants : " . $e->getMessage());
+        }
+    }
+}
+
 // Connexion à la base de données
-$conn = new mysqli('localhost', 'root', '', 'gestion_cours');
-if ($conn->connect_error) {
-    die("Erreur de connexion : " . $conn->connect_error);
+try {
+    $pdo = new PDO("mysql:host=localhost;dbname=gestion_cours;charset=utf8", 'root', '');
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die("Erreur de connexion : " . $e->getMessage());
 }
 
-// Vérifier si une demande de suppression a été faite
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['delete_id'])) {
-    $delete_id = $conn->real_escape_string($_POST['delete_id']);
+// Utilisation de la classe
+$studentManager = new VerifyInfoStudents($pdo);
 
-    // Supprimer l'étudiant de la base de données ainsi que ses affectations de cours
-    $conn->query("DELETE FROM etudiants WHERE id = $delete_id");
-    $conn->query("DELETE FROM etudiant_cours WHERE id_etudiant = $delete_id");
+// Vérifier si une suppression est demandée
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
+    $studentManager->deleteStudent($_POST['delete_id']);
 }
 
-// Requête SQL pour récupérer les étudiants avec leurs groupes et cours en une seule ligne
-$sql = "
-    SELECT e.id AS etudiant_id, e.nom AS etudiant_nom, g.nom AS groupe_nom,
-           GROUP_CONCAT(c.nom SEPARATOR ', ') AS cours_nom
-    FROM etudiants e
-    LEFT JOIN groupes g ON e.id_groupe = g.id
-    LEFT JOIN etudiant_cours ec ON e.id = ec.id_etudiant
-    LEFT JOIN cours c ON ec.id_cours = c.id
-    GROUP BY e.id
-    ORDER BY g.nom, e.nom";
-$result = $conn->query($sql);
+// Récupérer la liste des étudiants
+$students = $studentManager->getStudents();
 ?>
+
 
 <!DOCTYPE html>
 <html lang="fr">
