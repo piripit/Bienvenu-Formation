@@ -2,7 +2,7 @@
 // Connex$host = 'localhost';
 $dbname = 'gestion_cours';
 $username = 'root';
-$password = '';
+$password = 'momo22';
 $host = 'localhost';
 
 try {

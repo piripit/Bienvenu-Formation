@@ -70,7 +70,7 @@
             // Connexion à la base de données
             $dbname = 'gestion_cours';
             $username = 'root';
-            $password = '';
+            $password = 'momo22';
             $host = 'localhost';
 
             try {

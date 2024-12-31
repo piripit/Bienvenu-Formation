@@ -1,9 +1,8 @@
 <?php
-// Connex$host = 'localhost';
+$host = 'localhost';
 $dbname = 'gestion_cours';
 $username = 'root';
-$password = '';
-$host = 'localhost';
+$password = 'momo22';
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
@@ -11,6 +10,7 @@ try {
 } catch (PDOException $e) {
     die("Erreur de connexion : " . $e->getMessage());
 }
+
 class FormSent
 {
     public $modalMessage = '';
@@ -51,6 +51,14 @@ class FormSent
         }
     }
 }
+
+// Instancier l'objet FormSent
+$formSent = new FormSent($pdo);
+$formSent->insertCours();
+
+// Récupérer les messages pour les afficher
+$modalMessage = $formSent->modalMessage;
+$modalType = $formSent->modalType;
 ?>
 
 <!DOCTYPE html>

@@ -48,7 +48,7 @@ class VerifyInfoStudents
 
 // Connexion à la base de données
 try {
-    $pdo = new PDO("mysql:host=localhost;dbname=gestion_cours;charset=utf8", 'root', '');
+    $pdo = new PDO("mysql:host=localhost;dbname=gestion_cours;charset=utf8", 'root', 'momo22');
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
     die("Erreur de connexion : " . $e->getMessage());
@@ -65,7 +65,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
 // Récupérer la liste des étudiants
 $students = $studentManager->getStudents();
 ?>
-
 
 <!DOCTYPE html>
 <html lang="fr">
@@ -171,8 +170,8 @@ $students = $studentManager->getStudents();
                 <?php
                 $current_groupe = null;
 
-                if ($result->num_rows > 0) {
-                    while ($row = $result->fetch_assoc()) {
+                if (!empty($students)) {
+                    foreach ($students as $row) {
                         // Si on change de groupe, afficher un nouvel en-tête de groupe
                         if ($row['groupe_nom'] !== $current_groupe) {
                             $current_groupe = $row['groupe_nom'];
@@ -196,8 +195,6 @@ $students = $studentManager->getStudents();
                 } else {
                     echo "<tr><td colspan='4'>Aucun étudiant trouvé</td></tr>";
                 }
-
-                $conn->close();
                 ?>
             </tbody>
         </table>
