@@ -1,5 +1,5 @@
 <?php
-$conn = new mysqli('localhost', 'root', '', 'gestion_cours');
+$conn = new mysqli('localhost', 'root', 'momo22', 'gestion_cours');
 if ($conn->connect_error) {
     die("Erreur de connexion : " . $conn->connect_error);
 }
