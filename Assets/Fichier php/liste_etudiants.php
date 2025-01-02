@@ -124,6 +124,11 @@ $students = $studentManager->getStudents();
             color: white;
             font-weight: bold;
         }
+
+        ul.course-list {
+            padding-left: 20px;
+            margin: 0;
+        }
     </style>
 </head>
 
@@ -178,17 +183,28 @@ $students = $studentManager->getStudents();
                             echo "<tr class='group-header'><td colspan='4'>Groupe : $current_groupe</td></tr>";
                         }
 
+                        // Transformer les cours en une liste à puces
+                        $coursList = "";
+                        if (!empty($row['cours_nom'])) {
+                            $coursArray = explode(", ", $row['cours_nom']);
+                            $coursList = "<ul class='course-list'>";
+                            foreach ($coursArray as $cours) {
+                                $coursList .= "<li>" . htmlspecialchars($cours) . "</li>";
+                            }
+                            $coursList .= "</ul>";
+                        }
+
                         // Afficher les informations de l'étudiant avec ses cours regroupés
                         echo "<tr>";
-                        echo "<td>{$row['etudiant_nom']}</td>";
-                        echo "<td>{$row['groupe_nom']}</td>";
-                        echo "<td>{$row['cours_nom']}</td>";
+                        echo "<td>" . htmlspecialchars($row['etudiant_nom']) . "</td>";
+                        echo "<td>" . htmlspecialchars($row['groupe_nom']) . "</td>";
+                        echo "<td>$coursList</td>";
                         echo "<td>
                                 <form action='' method='POST' style='display: inline;'>
-                                    <input type='hidden' name='delete_id' value='{$row['etudiant_id']}'>
-                                    <button type='submit' class='btn btn-danger btn-sm' onclick='return confirm(\"Êtes-vous sûr de vouloir supprimer cet étudiant ?\");'>Supprimer</button>
+                                    <input type='hidden' name='delete_id' value='" . htmlspecialchars($row['etudiant_id']) . "'>
+                                    <button type='submit' class='btn btn-danger btn-sm' onclick='return confirm(\"\u00cates-vous s\u00fbr de vouloir supprimer cet \u00e9tudiant ?\");'>Supprimer</button>
                                 </form>
-                                 <a href='modif_Etudiant.php?id={$row['etudiant_id']}' class='btn btn-warning btn-sm'>Modifier</a>
+                                 <a href='modif_Etudiant.php?id=" . htmlspecialchars($row['etudiant_id']) . "' class='btn btn-warning btn-sm'>Modifier</a>
                               </td>";
                         echo "</tr>";
                     }

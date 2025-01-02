@@ -1,65 +1,105 @@
 <?php
-// Connexion à la base de données
-$conn = new mysqli('localhost', 'root', '', 'gestion_cours');
-if ($conn->connect_error) {
-    die("Erreur de connexion : " . $conn->connect_error);
+session_start(); // Démarrage de la session pour les notifications
+
+class StudentManager
+{
+    private $pdo;
+
+    public function __construct($dbconn)
+    {
+        $this->pdo = $dbconn;
+    }
+
+    public function getStudent($id)
+    {
+        $stmt = $this->pdo->prepare("SELECT * FROM etudiants WHERE id = ?");
+        $stmt->execute([$id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function getGroups()
+    {
+        $stmt = $this->pdo->query("SELECT id, nom FROM groupes");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getCourses()
+    {
+        $stmt = $this->pdo->query("SELECT id, nom FROM cours");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getStudentCourses($id)
+    {
+        $stmt = $this->pdo->prepare("SELECT id_cours FROM etudiant_cours WHERE id_etudiant = ?");
+        $stmt->execute([$id]);
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
+
+    public function updateStudent($id, $name, $groupId, $courseIds)
+    {
+        try {
+            // Mettre à jour le nom et le groupe de l'étudiant
+            $stmt = $this->pdo->prepare("UPDATE etudiants SET nom = ?, id_groupe = ? WHERE id = ?");
+            $stmt->execute([$name, $groupId, $id]);
+
+            // Supprimer les cours existants de l'étudiant
+            $stmt = $this->pdo->prepare("DELETE FROM etudiant_cours WHERE id_etudiant = ?");
+            $stmt->execute([$id]);
+
+            // Insérer les nouveaux cours
+            if (!empty($courseIds)) {
+                $stmt = $this->pdo->prepare("INSERT INTO etudiant_cours (id_etudiant, id_cours) VALUES (?, ?)");
+                foreach ($courseIds as $courseId) {
+                    $stmt->execute([$id, $courseId]);
+                }
+            }
+
+            // Ajouter un message de confirmation
+            $_SESSION['message'] = "Étudiant mis à jour avec succès !";
+        } catch (PDOException $e) {
+            die("Erreur lors de la mise à jour de l'étudiant : " . $e->getMessage());
+        }
+    }
 }
 
-// Charger les informations de l'étudiant si l'ID est passé dans l'URL
-if (isset($_GET['id'])) {
-    $id_etudiant = $_GET['id'];
-    $result = $conn->query("SELECT * FROM etudiants WHERE id = $id_etudiant");
-    $etudiant = $result->fetch_assoc();
+// Connexion à la base de données
+try {
+    $pdo = new PDO("mysql:host=localhost;dbname=gestion_cours;charset=utf8", 'root', '');
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die("Erreur de connexion : " . $e->getMessage());
+}
 
-    if (!$etudiant) {
+// Gestion de la mise à jour de l'étudiant
+$manager = new StudentManager($pdo);
+
+if (isset($_GET['id'])) {
+    $studentId = $_GET['id'];
+    $student = $manager->getStudent($studentId);
+
+    if (!$student) {
         die("Étudiant non trouvé !");
     }
 
-    // Récupérer les ID des cours actuellement associés à l'étudiant
-    $current_courses_result = $conn->query("SELECT id_cours FROM etudiant_cours WHERE id_etudiant = $id_etudiant");
-    $current_courses = [];
-    while ($row = $current_courses_result->fetch_assoc()) {
-        $current_courses[] = $row['id_cours'];
+    $groups = $manager->getGroups();
+    $courses = $manager->getCourses();
+    $studentCourses = $manager->getStudentCourses($studentId);
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $name = $_POST['nom'];
+        $groupId = $_POST['groupe'];
+        $selectedCourses = isset($_POST['cours']) ? $_POST['cours'] : [];
+
+        $manager->updateStudent($studentId, $name, $groupId, $selectedCourses);
+
+        // Redirection pour afficher le message sans re-soumettre le formulaire
+        header("Location: modif_Etudiant.php?id=$studentId");
+        exit();
     }
 } else {
     die("ID de l'étudiant non spécifié !");
 }
-
-// Charger les groupes disponibles
-$groupes = $conn->query("SELECT id, nom FROM groupes");
-
-// Charger les cours disponibles
-$cours = $conn->query("SELECT id, nom FROM cours");
-
-// Mettre à jour les informations de l'étudiant
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nom = $_POST['nom'];
-    $groupe_id = $_POST['groupe']; // ID du groupe sélectionné
-    $selected_courses = isset($_POST['cours']) ? $_POST['cours'] : []; // IDs des cours sélectionnés
-
-    // Mettre à jour le nom et le groupe de l'étudiant
-    $stmt = $conn->prepare("UPDATE etudiants SET nom = ?, id_groupe = ? WHERE id = ?");
-    $stmt->bind_param("sii", $nom, $groupe_id, $id_etudiant);
-    $stmt->execute();
-    $stmt->close();
-
-    // Supprimer les associations actuelles entre l'étudiant et les cours
-    $conn->query("DELETE FROM etudiant_cours WHERE id_etudiant = $id_etudiant");
-
-    // Insérer les nouvelles associations pour les cours sélectionnés
-    $stmt = $conn->prepare("INSERT INTO etudiant_cours (id_etudiant, id_cours) VALUES (?, ?)");
-    foreach ($selected_courses as $course_id) {
-        $stmt->bind_param("ii", $id_etudiant, $course_id);
-        $stmt->execute();
-    }
-    $stmt->close();
-
-    // Redirection après mise à jour
-    header("Location: liste_etudiants.php");
-    exit();
-}
-
-$conn->close();
 ?>
 
 <!DOCTYPE html>
@@ -67,31 +107,12 @@ $conn->close();
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Modifier l'étudiant</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
-            background-color: #f8f9fa;
-        }
-
-        h2 {
-            margin-bottom: 20px;
-        }
-
-        table {
-            background-color: white;
-            border-radius: 5px;
-            overflow: hidden;
-        }
-
-        thead {
-            background-color: #0056b3;
-            color: white;
-        }
-
-        th,
-        td {
-            vertical-align: middle;
+            background-color: #f4f8fb;
         }
 
         .navbar {
@@ -108,22 +129,38 @@ $conn->close();
             border-radius: 4px;
         }
 
-        .active {
-            font-weight: bold;
-            background-color: rgba(255, 255, 255, 0.2);
-            border-radius: 4px;
+        h2 {
+            margin-top: 20px;
+            margin-bottom: 20px;
+            color: #0056b3;
+            text-align: center;
         }
 
-        .group-header {
-            background-color: #6c757d;
-            color: white;
-            font-weight: bold;
+        .form-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .alert {
+            margin-top: 20px;
+        }
+
+        .btn-primary {
+            background-color: #0056b3;
+            border-color: #0056b3;
+        }
+
+        .btn-primary:hover {
+            background-color: #004494;
+            border-color: #004494;
         }
     </style>
 </head>
 
 <body>
-
+    <!-- Menu de navigation -->
     <nav class="navbar navbar-expand-lg navbar-light">
         <div class="container-fluid">
             <a class="navbar-brand" href="#">Gestion d'assiduité</a>
@@ -139,49 +176,59 @@ $conn->close();
                         <a class="nav-link active" href="liste_etudiants.php">Liste des Étudiants</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Emploi du temps général</a>
+                        <a class="nav-link" href="emplois_du_temps.php">Emploi du Temps</a>
                     </li>
                 </ul>
             </div>
         </div>
     </nav>
+
     <div class="container mt-5">
         <h2>Modifier les informations de l'étudiant</h2>
-        <form method="POST" action="">
-            <div class="mb-3">
-                <label for="nom" class="form-label">Nom :</label>
-                <input type="text" id="nom" name="nom" class="form-control" value="<?php echo htmlspecialchars($etudiant['nom']); ?>" required>
-            </div>
-            <div class="mb-3">
-                <label for="groupe" class="form-label">Groupe :</label>
-                <select id="groupe" name="groupe" class="form-control" required>
-                    <option value="">Sélectionner un groupe</option>
-                    <?php while ($groupe = $groupes->fetch_assoc()): ?>
-                        <option value="<?php echo $groupe['id']; ?>" <?php echo ($groupe['id'] == $etudiant['id_groupe']) ? 'selected' : ''; ?>>
-                            <?php echo htmlspecialchars($groupe['nom']); ?>
-                        </option>
-                    <?php endwhile; ?>
-                </select>
-            </div>
 
-            <div class="mb-3">
-                <label class="form-label">Cours :</label>
-                <div class="form-check">
-                    <?php while ($cour = $cours->fetch_assoc()): ?>
-                        <input type="checkbox" class="form-check-input" name="cours[]" value="<?php echo $cour['id']; ?>"
-                            <?php echo (in_array($cour['id'], $current_courses)) ? 'checked' : ''; ?>>
-                        <label class="form-check-label">
-                            <?php echo htmlspecialchars($cour['nom']); ?>
-                        </label>
-                        <br>
-                    <?php endwhile; ?>
+        <!-- Message de confirmation -->
+        <?php if (isset($_SESSION['message'])): ?>
+            <div class="alert alert-success">
+                <?php
+                echo $_SESSION['message'];
+                unset($_SESSION['message']); // Supprimer le message après affichage
+                ?>
+            </div>
+        <?php endif; ?>
+
+        <div class="form-container">
+            <form method="POST">
+                <div class="mb-3">
+                    <label for="nom" class="form-label">Nom :</label>
+                    <input type="text" id="nom" name="nom" class="form-control" value="<?php echo htmlspecialchars($student['nom']); ?>" required>
                 </div>
-            </div>
-
-            <button type="submit" class="btn btn-primary">Mettre à jour</button>
-            <a href="liste_etudiants.php" class="btn btn-secondary">Annuler</a>
-        </form>
+                <div class="mb-3">
+                    <label for="groupe" class="form-label">Groupe :</label>
+                    <select id="groupe" name="groupe" class="form-control" required>
+                        <option value="">Sélectionner un groupe</option>
+                        <?php foreach ($groups as $group): ?>
+                            <option value="<?php echo $group['id']; ?>" <?php echo ($group['id'] == $student['id_groupe']) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($group['nom']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Cours :</label>
+                    <?php foreach ($courses as $course): ?>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" name="cours[]" value="<?php echo $course['id']; ?>"
+                                <?php echo (in_array($course['id'], $studentCourses)) ? 'checked' : ''; ?>>
+                            <label class="form-check-label"><?php echo htmlspecialchars($course['nom']); ?></label>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+                <button type="submit" class="btn btn-primary">Mettre à jour</button>
+                <a href="liste_etudiants.php" class="btn btn-secondary">Annuler</a>
+            </form>
+        </div>
     </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
